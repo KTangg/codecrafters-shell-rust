@@ -22,28 +22,55 @@ fn main() {
                 println!("{}", parts.next().unwrap_or(""));
             }
             Some("type") => {
-                builtin_type(parts.next().unwrap_or(""), &path);
+                builtin_type("type", parts.next().unwrap_or(""), &path);
             }
-            _ => println!("{}: command not found", command.trim())
+            Some(cmd) => {
+                exec_path_executer(cmd, parts.next().unwrap_or(""), &path);
+            }
+            _ => { /* TODO Exit shell on empty */ }
         }
     }
 }
 
-fn builtin_type(cmd: &str, path: &Vec<&str>) {
-    if ["exit", "echo", "type"].contains(&cmd) {
-        println!("{} is a shell builtin", cmd);
-    } else {
-        for dir in path {
-            let full_path = format!("{}/{}", dir, cmd);
-            // Check if the file
-            if std::path::Path::new(&full_path).exists() && std::path::Path::new(&full_path).is_file() {
-                let metadata = std::fs::metadata(&full_path).unwrap();
-                if metadata.permissions().mode() & 0o111 != 0 {
-                    println!("{} is {}", cmd, full_path);
-                    return;
-                }
+// Wrapper for path finding and execute given function
+fn path_executer<F>(cmd: &str, arg: &str, path: &Vec<&str>, func: F)
+where
+    F: Fn(&str, &str, &str),
+{
+    for dir in path {
+        let full_path = format!("{}/{}", dir, cmd);
+        if std::path::Path::new(&full_path).exists() && std::path::Path::new(&full_path).is_file() {
+            let metadata = std::fs::metadata(&full_path).unwrap();
+            if metadata.permissions().mode() & 0o111 != 0 {
+                func(cmd, arg, &full_path);
+                return;
             }
         }
-        println!("{}: not found", cmd);
     }
+    println!("{}: not found", cmd);
+}
+
+fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
+    for arg in args.split_whitespace() {
+        if ["exit", "echo", "type"].contains(&arg) {
+            println!("{} is a shell builtin", arg);
+        } else {
+            fn type_func(cmd: &str, _arg: &str, full_path: &str) {
+                println!("{} is {}", cmd, full_path);
+            }
+            path_executer(arg, "", path, type_func);
+        }
+    }
+}
+
+fn exec_path_executer(cmd: &str, args: &str, path: &Vec<&str>) {
+    fn exec_func(cmd: &str, arg: &str, _full_path: &str) {
+        let mut child = std::process::Command::new(cmd)
+            .args(arg.split_whitespace())
+            .spawn()
+            .expect("Failed to execute command");
+
+        child.wait().expect("Failed to wait on child");
+    }
+    path_executer(cmd, args, path, exec_func);
 }
