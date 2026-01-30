@@ -11,8 +11,12 @@ fn main() {
         let mut command = String::new();
         io::stdin().read_line(&mut command).unwrap();
 
-        match command.trim() {
-            "exit" => break,
+        let mut parts = command.trim().splitn(2, ' ');
+        match parts.next() {
+            Some("exit") => break,
+            Some("echo") => {
+                println!("{}", parts.next().unwrap_or(""));
+            }
             _ => println!("{}: command not found", command.trim())
         }
     }
