@@ -2,7 +2,7 @@
 use std::io::{self, Write};
 use std::os::unix::fs::PermissionsExt;
 
-const BUILTIN_CMDS: [&str; 4] = ["exit", "echo", "type", "pwd"];
+const BUILTIN_CMDS: [&str; 5] = ["exit", "echo", "type", "pwd", "cd"];
 
 fn main() {
     loop {
@@ -43,6 +43,9 @@ fn exec_builtin(cmd: &str, arg: &str, path: &Vec<&str>) {
         "pwd" => {
             let _ = builtin_pwd();
         }
+        "cd" => {
+            builtin_cd(arg);
+        }
         &_ => todo!()
     }
 }
@@ -65,6 +68,18 @@ where
     println!("{}: not found", cmd);
 }
 
+fn exec_path_executer(cmd: &str, args: &str, path: &Vec<&str>) {
+    fn exec_func(cmd: &str, arg: &str, _full_path: &str) {
+        let mut child = std::process::Command::new(cmd)
+            .args(arg.split_whitespace())
+            .spawn()
+            .expect("Failed to execute command");
+
+        child.wait().expect("Failed to wait on child");
+    }
+    path_executer(cmd, args, path, exec_func);
+}
+
 fn builtin_pwd() -> std::io::Result<()> {
     let cwd = std::env::current_dir()?;
     println!("{}", cwd.display());
@@ -85,14 +100,27 @@ fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
     }
 }
 
-fn exec_path_executer(cmd: &str, args: &str, path: &Vec<&str>) {
-    fn exec_func(cmd: &str, arg: &str, _full_path: &str) {
-        let mut child = std::process::Command::new(cmd)
-            .args(arg.split_whitespace())
-            .spawn()
-            .expect("Failed to execute command");
-
-        child.wait().expect("Failed to wait on child");
+fn builtin_cd(arg: &str) {
+    let mut parts = arg.split_whitespace();
+    match (parts.next(), parts.next()) {
+        (None, _) | (Some(""), _) => {
+            // No argument: change to $HOME
+            match std::env::var("HOME") {
+                Ok(home) => {
+                    if let Err(e) = std::env::set_current_dir(&home) {
+                        eprintln!("cd: {}", e);
+                    }
+                }
+                Err(_) => eprintln!("cd: HOME not set"),
+            }
+        }
+        (Some(path), None) => {
+            if let Err(e) = std::env::set_current_dir(path) {
+                eprintln!("cd: {}: {}", path, e);
+            }
+        }
+        _ => {
+            println!("cd: too many arguments")
+        }
     }
-    path_executer(cmd, args, path, exec_func);
 }
