@@ -62,7 +62,7 @@ fn builtin_pwd() -> std::io::Result<()> {
 
 fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
     for arg in args.split_whitespace() {
-        if ["exit", "echo", "type"].contains(&arg) {
+        if ["exit", "echo", "type", "pwd"].contains(&arg) {
             println!("{} is a shell builtin", arg);
         } else {
             fn type_func(cmd: &str, _arg: &str, full_path: &str) {
