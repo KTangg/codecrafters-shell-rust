@@ -103,7 +103,7 @@ fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
 fn builtin_cd(arg: &str) {
     let mut parts = arg.split_whitespace();
     match (parts.next(), parts.next()) {
-        (None, _) | (Some(""), _) => {
+        (None, _) | (Some(""), _ ) | (Some("~"), None) => {
             // No argument: change to $HOME
             match std::env::var("HOME") {
                 Ok(home) => {
