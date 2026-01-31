@@ -2,9 +2,9 @@
 use std::io::{self, Write};
 use std::os::unix::fs::PermissionsExt;
 
-fn main() {
-    // TODO: Uncomment the code below to pass the first stage
+const BUILTIN_CMDS: [&str; 4] = ["exit", "echo", "type", "pwd"];
 
+fn main() {
     loop {
          print!("$ ");
          io::stdout().flush().unwrap();
@@ -17,21 +17,33 @@ fn main() {
 
         let mut parts = command.trim().splitn(2, ' ');
         match parts.next() {
-            Some("exit") => break,
-            Some("echo") => {
-                println!("{}", parts.next().unwrap_or(""));
-            }
-            Some("type") => {
-                builtin_type("type", parts.next().unwrap_or(""), &path);
-            }
-            Some("pwd") => {
-                let _ = builtin_pwd();
+            Some(cmd) if BUILTIN_CMDS.contains(&cmd) => {
+                exec_builtin(&cmd, parts.next().unwrap_or(""), &path);
             }
             Some(cmd) => {
                 exec_path_executer(cmd, parts.next().unwrap_or(""), &path);
             }
             _ => { /* TODO Exit shell on empty */ }
         }
+    }
+}
+
+fn exec_builtin(cmd: &str, arg: &str, path: &Vec<&str>) {
+    match cmd {
+        "exit" => {
+            // TODO add exit code
+            std::process::exit(0);
+        }
+        "echo" => {
+            println!("{}", arg);
+        }
+        "type" => {
+            builtin_type("type", arg, &path);
+        }
+        "pwd" => {
+            let _ = builtin_pwd();
+        }
+        &_ => todo!()
     }
 }
 
@@ -62,7 +74,7 @@ fn builtin_pwd() -> std::io::Result<()> {
 
 fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
     for arg in args.split_whitespace() {
-        if ["exit", "echo", "type", "pwd"].contains(&arg) {
+        if BUILTIN_CMDS.contains(&arg) {
             println!("{} is a shell builtin", arg);
         } else {
             fn type_func(cmd: &str, _arg: &str, full_path: &str) {
