@@ -108,7 +108,11 @@ fn builtin_cd(arg: &str) {
             match std::env::var("HOME") {
                 Ok(home) => {
                     if let Err(e) = std::env::set_current_dir(&home) {
-                        eprintln!("cd: {}", e);
+                        if e.kind() == std::io::ErrorKind::NotFound {
+                            eprintln!("cd: {}: No such file or directory", home);
+                        } else {
+                            eprintln!("cd: {}: {}", home, e);
+                        }
                     }
                 }
                 Err(_) => eprintln!("cd: HOME not set"),
@@ -116,7 +120,11 @@ fn builtin_cd(arg: &str) {
         }
         (Some(path), None) => {
             if let Err(e) = std::env::set_current_dir(path) {
-                eprintln!("cd: {}: {}", path, e);
+                if e.kind() == std::io::ErrorKind::NotFound {
+                    eprintln!("cd: {}: No such file or directory", path);
+                } else {
+                    eprintln!("cd: {}: {}", path, e);
+                }
             }
         }
         _ => {
