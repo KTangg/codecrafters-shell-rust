@@ -24,6 +24,9 @@ fn main() {
             Some("type") => {
                 builtin_type("type", parts.next().unwrap_or(""), &path);
             }
+            Some("pwd") => {
+                let _ = builtin_pwd();
+            }
             Some(cmd) => {
                 exec_path_executer(cmd, parts.next().unwrap_or(""), &path);
             }
@@ -48,6 +51,13 @@ where
         }
     }
     println!("{}: not found", cmd);
+}
+
+fn builtin_pwd() -> std::io::Result<()> {
+    let cwd = std::env::current_dir()?;
+    println!("{}", cwd.display());
+
+    Ok(())
 }
 
 fn builtin_type(_cmd: &str, args: &str, path: &Vec<&str>) {
