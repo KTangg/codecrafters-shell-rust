@@ -47,11 +47,20 @@ impl Lexer {
 
                 ('\"', Quote::None, false) => quote = Quote::Double,
                 ('\"', Quote::Double, false) => quote = Quote::None,
+                ('"' | '\\' | '$' | '`' | '\n', Quote::Double, true) => {
+                    current.push(ch);
+                    is_escape = false;
+                }
+                (_, Quote::Double, true) => {
+                    current.push('\\');
+                    current.push(ch);
+                    is_escape = false;
+                }
 
                 ('|', Quote::None, false) => tokens.push(Token::Pipe),
 
                 ('\\', Quote::None, false) => is_escape = true,
-
+                ('\\', Quote::Double, false) => is_escape = true,
                 _ => {
                     current.push(ch);
                     is_escape = false;
@@ -150,6 +159,29 @@ mod tests {
 
         lex.push("'example\\\"test'");
         let expect = vec![Token::Literal("example\\\"test".to_string())];
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_escape_in_double_quote() {
+        //Within double quotes, a backslash only escapes certain special characters: ", \, $, `, and newline.
+        //For all other characters, the backslash is treated literally.
+        let mut lex = Lexer::new();
+
+        lex.push("\"\\hello \\world\"");
+        let expect = vec![Token::Literal("\\hello \\world".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("\"A \\ escapes itself\"");
+        let expect = vec![Token::Literal("A \\ escapes itself".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("\"A \\\" inside double quotes\"");
+        let expect = vec![Token::Literal("A \" inside double quotes".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("\"\\$ is a Dollar sign\" ");
+        let expect = vec![Token::Literal("$ is a Dollar sign".to_string())];
         assert_eq!(expect, lex.tokenize());
     }
 }
