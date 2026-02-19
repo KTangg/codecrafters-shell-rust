@@ -8,7 +8,7 @@ impl Command for Pwd {
     fn name(&self) -> &str {
         "pwd"
     }
-    fn execute(&self, args: &[String], ctx: &mut ShellContext) {
+    fn execute(&self, _args: &[String], ctx: &mut ShellContext) {
         println!("{}", ctx.cwd.to_str().unwrap());
     }
 }

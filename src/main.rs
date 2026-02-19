@@ -1,5 +1,5 @@
+use std::env;
 use std::io::{self, Write};
-use std::{env, path::Path};
 
 mod commands;
 mod context;

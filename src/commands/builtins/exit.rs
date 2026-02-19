@@ -8,7 +8,7 @@ impl Command for Exit {
     fn name(&self) -> &str {
         "exit"
     }
-    fn execute(&self, args: &[String], ctx: &mut ShellContext) {
+    fn execute(&self, _args: &[String], _ctx: &mut ShellContext) {
         std::process::exit(0);
     }
 }

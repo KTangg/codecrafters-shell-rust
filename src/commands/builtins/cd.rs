@@ -32,7 +32,7 @@ impl Command for Cd {
             },
         };
 
-        if let Err(e) = env::set_current_dir(&target) {
+        if let Err(_) = env::set_current_dir(&target) {
             eprintln!(
                 "{}: {}: No such file or directory",
                 self.name(),

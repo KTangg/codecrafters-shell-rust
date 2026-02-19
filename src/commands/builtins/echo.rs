@@ -8,7 +8,7 @@ impl Command for Echo {
     fn name(&self) -> &str {
         "echo"
     }
-    fn execute(&self, args: &[String], ctx: &mut ShellContext) {
+    fn execute(&self, args: &[String], _ctx: &mut ShellContext) {
         println!("{}", args.join(" "));
     }
 }
