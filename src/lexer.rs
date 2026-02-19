@@ -24,21 +24,37 @@ impl Lexer {
         let mut tokens = Vec::new();
         let mut current = String::new();
 
-        let mut in_single = false;
-        let mut in_double = false;
+        enum Quote {
+            None,
+            Single,
+            Double,
+        }
+
+        let mut is_escape = false;
+
+        let mut quote = Quote::None;
 
         for ch in self.buffer.chars() {
-            match ch {
-                ' ' | '\t' if !in_single && !in_double => {
+            match (ch, &quote, &is_escape) {
+                (' ' | '\t', Quote::None, false) => {
                     if !current.is_empty() {
-                        tokens.push(Token::Literal(current.clone()));
-                        current.clear();
+                        tokens.push(Token::Literal(std::mem::take(&mut current)));
                     }
                 }
-                '\'' if !in_double => in_single = !in_single,
-                '\"' if !in_single => in_double = !in_double,
+
+                ('\'', Quote::None, false) => quote = Quote::Single,
+                ('\'', Quote::Single, false) => quote = Quote::None,
+
+                ('\"', Quote::None, false) => quote = Quote::Double,
+                ('\"', Quote::Double, false) => quote = Quote::None,
+
+                ('|', Quote::None, false) => tokens.push(Token::Pipe),
+
+                ('\\', _, false) => is_escape = true,
+
                 _ => {
                     current.push(ch);
+                    is_escape = false;
                 }
             }
         }
@@ -102,6 +118,46 @@ mod tests {
 
         let expect = vec![Token::Literal("helloworld".to_string())];
 
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_double_quote() {
+        let mut lex = Lexer::new();
+        lex.push("\"hello     world\"");
+
+        let expect = vec![Token::Literal("hello     world".to_string())];
+
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_quote_in_double_quote() {
+        let mut lex = Lexer::new();
+        lex.push("\"shell's test\"");
+
+        let expect = vec![Token::Literal("shell's test".to_string())];
+
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_escape_char() {
+        let mut lex = Lexer::new();
+
+        lex.push("multiple\\ \\ \\ \\ spaces");
+        let expect = vec![Token::Literal("multiple    spaces".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("\\'\\\"literal quotes\\\"\\'");
+        let expect = vec![
+            Token::Literal("\'\"literal".to_string()),
+            Token::Literal("quotes\"\'".to_string()),
+        ];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("ignore\\_backslash");
+        let expect = vec![Token::Literal("ignore_backslash".to_string())];
         assert_eq!(expect, lex.tokenize());
     }
 }
