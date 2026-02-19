@@ -75,74 +75,53 @@ mod tests {
     #[test]
     fn test_white_space() {
         let mut lex = Lexer::new();
+
         lex.push("hello world");
-
         let expect = vec![
             Token::Literal("hello".to_string()),
             Token::Literal("world".to_string()),
         ];
-
         assert_eq!(expect, lex.tokenize());
-    }
 
-    #[test]
-    fn test_multiple_spaces() {
-        let mut lex = Lexer::new();
         lex.push("  hello     world    ");
-
         let expect = vec![
             Token::Literal("hello".to_string()),
             Token::Literal("world".to_string()),
         ];
-
         assert_eq!(expect, lex.tokenize());
     }
 
     #[test]
     fn test_single_quote() {
         let mut lex = Lexer::new();
-        lex.push("'hello' world");
 
+        lex.push("'hello' world");
         let expect = vec![
             Token::Literal("hello".to_string()),
             Token::Literal("world".to_string()),
         ];
-
         assert_eq!(expect, lex.tokenize());
-    }
 
-    #[test]
-    fn test_consecutive_single_quote() {
-        let mut lex = Lexer::new();
         lex.push("'hello''world'");
-
         let expect = vec![Token::Literal("helloworld".to_string())];
-
         assert_eq!(expect, lex.tokenize());
     }
 
     #[test]
     fn test_double_quote() {
         let mut lex = Lexer::new();
+
         lex.push("\"hello     world\"");
-
         let expect = vec![Token::Literal("hello     world".to_string())];
-
         assert_eq!(expect, lex.tokenize());
-    }
 
-    #[test]
-    fn test_quote_in_double_quote() {
-        let mut lex = Lexer::new();
         lex.push("\"shell's test\"");
-
         let expect = vec![Token::Literal("shell's test".to_string())];
-
         assert_eq!(expect, lex.tokenize());
     }
 
     #[test]
-    fn test_escape_char() {
+    fn test_escape() {
         let mut lex = Lexer::new();
 
         lex.push("multiple\\ \\ \\ \\ spaces");
