@@ -30,40 +30,48 @@ impl Lexer {
             Double,
         }
 
-        let mut is_escape = false;
-
         let mut quote = Quote::None;
 
-        for ch in self.buffer.chars() {
-            match (ch, &quote, &is_escape) {
-                (' ' | '\t', Quote::None, false) => {
+        let mut chars = self.buffer.chars().peekable();
+
+        while let Some(ch) = chars.next() {
+            match (ch, &quote) {
+                (' ' | '\t', Quote::None) => {
                     if !current.is_empty() {
                         tokens.push(Token::Literal(std::mem::take(&mut current)));
                     }
                 }
 
-                ('\'', Quote::None, false) => quote = Quote::Single,
-                ('\'', Quote::Single, false) => quote = Quote::None,
+                ('\'', Quote::None) => quote = Quote::Single,
+                ('\'', Quote::Single) => quote = Quote::None,
 
-                ('\"', Quote::None, false) => quote = Quote::Double,
-                ('\"', Quote::Double, false) => quote = Quote::None,
-                ('"' | '\\' | '$' | '`' | '\n', Quote::Double, true) => {
-                    current.push(ch);
-                    is_escape = false;
+                ('\"', Quote::None) => quote = Quote::Double,
+                ('\"', Quote::Double) => quote = Quote::None,
+
+                ('|', Quote::None) => tokens.push(Token::Pipe),
+
+                ('\\', Quote::None) => {
+                    let Some(c) = chars.peek() else { todo!() };
+
+                    current.push(*c);
+                    chars.next();
                 }
-                (_, Quote::Double, true) => {
-                    current.push('\\');
-                    current.push(ch);
-                    is_escape = false;
+                ('\\', Quote::Double) => {
+                    let Some(c) = chars.peek() else { todo!() };
+
+                    match c {
+                        '"' | '\\' | '$' | '`' | '\n' => {
+                            current.push(*c);
+                            chars.next();
+                        }
+                        _ => {
+                            current.push(ch);
+                        }
+                    }
                 }
 
-                ('|', Quote::None, false) => tokens.push(Token::Pipe),
-
-                ('\\', Quote::None, false) => is_escape = true,
-                ('\\', Quote::Double, false) => is_escape = true,
                 _ => {
                     current.push(ch);
-                    is_escape = false;
                 }
             }
         }
