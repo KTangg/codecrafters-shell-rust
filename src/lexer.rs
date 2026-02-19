@@ -50,7 +50,7 @@ impl Lexer {
 
                 ('|', Quote::None, false) => tokens.push(Token::Pipe),
 
-                ('\\', _, false) => is_escape = true,
+                ('\\', Quote::None, false) => is_escape = true,
 
                 _ => {
                     current.push(ch);
@@ -137,6 +137,19 @@ mod tests {
 
         lex.push("ignore\\_backslash");
         let expect = vec![Token::Literal("ignore_backslash".to_string())];
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_escape_in_quote() {
+        let mut lex = Lexer::new();
+
+        lex.push("'shell\\\\\\nscript'");
+        let expect = vec![Token::Literal("shell\\\\\\nscript".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("'example\\\"test'");
+        let expect = vec![Token::Literal("example\\\"test".to_string())];
         assert_eq!(expect, lex.tokenize());
     }
 }
