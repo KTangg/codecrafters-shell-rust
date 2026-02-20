@@ -3,6 +3,8 @@ pub enum Token {
     Literal(String),
     Complex(String),
     Pipe,
+    Redirect(usize),
+    Append(usize),
 }
 
 pub enum Quote {
@@ -49,16 +51,35 @@ impl Lexer {
                     chars.next();
                 }
                 ('\\', Quote::Double) => {
-                    let Some(c) = chars.peek() else { todo!() };
+                    let Some(next_char) = chars.peek() else {
+                        todo!()
+                    };
 
-                    match c {
+                    match next_char {
                         '"' | '\\' | '$' | '`' | '\n' => {
-                            tk.push(*c);
+                            tk.push(*next_char);
                             chars.next();
                         }
                         _ => {
                             tk.push(ch);
                         }
+                    }
+                }
+
+                // TODO: Handle & for all fd redirect/append
+                ('>', Quote::None) => {
+                    let Some(next_char) = chars.peek() else {
+                        todo!()
+                    };
+                    let fd = Self::take_io_number(&mut tk).unwrap_or(1);
+                    Self::flush_token(&mut tk, &mut tokens, Token::Literal);
+
+                    match next_char {
+                        '>' => {
+                            chars.next();
+                            tokens.push(Token::Append(fd))
+                        }
+                        _ => tokens.push(Token::Redirect(fd)),
                     }
                 }
 
@@ -81,6 +102,16 @@ impl Lexer {
         if !tk.is_empty() {
             tokens.push(kind(std::mem::take(tk)));
         }
+    }
+
+    fn take_io_number(tk: &mut String) -> Option<usize> {
+        if !tk.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+
+        let fd = tk.parse::<usize>().ok()?;
+        tk.clear();
+        Some(fd)
     }
 }
 
@@ -189,6 +220,35 @@ mod tests {
 
         lex.push("\"\\$ is a Dollar sign\" ");
         let expect = vec![Token::Literal("$ is a Dollar sign".to_string())];
+        assert_eq!(expect, lex.tokenize());
+    }
+
+    #[test]
+    fn test_redirect_and_append() {
+        let mut lex = Lexer::new();
+
+        lex.push("> test.txt");
+        let expect = vec![Token::Redirect(1), Token::Literal("test.txt".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("2> test.txt");
+        let expect = vec![Token::Redirect(2), Token::Literal("test.txt".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push(">> test.txt");
+        let expect = vec![Token::Append(1), Token::Literal("test.txt".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("2>> test.txt");
+        let expect = vec![Token::Append(2), Token::Literal("test.txt".to_string())];
+        assert_eq!(expect, lex.tokenize());
+
+        lex.push("just2>test.txt");
+        let expect = vec![
+            Token::Literal("just2".to_string()),
+            Token::Redirect(1),
+            Token::Literal("test.txt".to_string()),
+        ];
         assert_eq!(expect, lex.tokenize());
     }
 }
