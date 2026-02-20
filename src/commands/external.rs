@@ -32,12 +32,6 @@ impl ExtCommand {
             return;
         };
 
-        let mut child = Command::new(path)
-            .arg0(name)
-            .args(args)
-            .spawn()
-            .expect("{name} command failed to start");
-
-        child.wait().expect("{name} command wasn't running");
+        let _ = Command::new(path).arg0(name).args(args).exec();
     }
 }
