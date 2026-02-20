@@ -5,6 +5,12 @@ pub enum Token {
     Pipe,
 }
 
+pub enum Quote {
+    None,
+    Single,
+    Double,
+}
+
 pub struct Lexer {
     buffer: String,
 }
@@ -21,27 +27,13 @@ impl Lexer {
     }
 
     pub fn tokenize(&mut self) -> Vec<Token> {
+        let mut tk = String::new();
         let mut tokens = Vec::new();
-        let mut current = String::new();
-
-        enum Quote {
-            None,
-            Single,
-            Double,
-        }
-
         let mut quote = Quote::None;
-
         let mut chars = self.buffer.chars().peekable();
 
         while let Some(ch) = chars.next() {
             match (ch, &quote) {
-                (' ' | '\t', Quote::None) => {
-                    if !current.is_empty() {
-                        tokens.push(Token::Literal(std::mem::take(&mut current)));
-                    }
-                }
-
                 ('\'', Quote::None) => quote = Quote::Single,
                 ('\'', Quote::Single) => quote = Quote::None,
 
@@ -53,7 +45,7 @@ impl Lexer {
                 ('\\', Quote::None) => {
                     let Some(c) = chars.peek() else { todo!() };
 
-                    current.push(*c);
+                    tk.push(*c);
                     chars.next();
                 }
                 ('\\', Quote::Double) => {
@@ -61,27 +53,34 @@ impl Lexer {
 
                     match c {
                         '"' | '\\' | '$' | '`' | '\n' => {
-                            current.push(*c);
+                            tk.push(*c);
                             chars.next();
                         }
                         _ => {
-                            current.push(ch);
+                            tk.push(ch);
                         }
                     }
                 }
 
+                (ch, Quote::None) if ch.is_ascii_whitespace() => {
+                    Self::flush_token(&mut tk, &mut tokens, Token::Literal);
+                }
                 _ => {
-                    current.push(ch);
+                    tk.push(ch);
                 }
             }
         }
-        if !current.is_empty() {
-            tokens.push(Token::Literal(current));
-        }
 
+        Self::flush_token(&mut tk, &mut tokens, Token::Literal);
         self.buffer.clear();
 
         tokens
+    }
+
+    fn flush_token(tk: &mut String, tokens: &mut Vec<Token>, kind: fn(String) -> Token) {
+        if !tk.is_empty() {
+            tokens.push(kind(std::mem::take(tk)));
+        }
     }
 }
 
