@@ -3,12 +3,13 @@ use std::io::{self, Write};
 
 mod commands;
 mod context;
+mod job;
 mod lexer;
 
 use commands::builtins;
-use lexer::{Lexer, Token};
+use job::Job;
+use lexer::Lexer;
 
-use crate::commands::ExtCommand;
 use crate::context::{Env, ShellContext};
 
 fn main() {
@@ -30,31 +31,14 @@ fn main() {
             continue;
         }
 
-        // println!("{tokens:?}");
+        let job = Job::new(tokens);
 
-        let args: Vec<String> = tokens
-            .into_iter()
-            .filter_map(|t| {
-                if let Token::Literal(s) = t {
-                    Some(s)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        let (cmd_name, cmd_args) = args.split_first().unwrap();
-
-        let Some(cmd) = ctx.registry.get_command(cmd_name) else {
-            ExtCommand::execute(cmd_name, cmd_args, &ctx);
-            continue;
-        };
-
-        cmd.execute(&cmd_args, &mut ctx);
+        job.run(&mut ctx);
     }
 }
 
 fn prompt() {
+    // TODO CWD mode & > mode promp
     print!("$ ");
 
     io::stdout().flush().expect("failed to flush stdout");
