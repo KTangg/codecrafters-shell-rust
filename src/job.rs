@@ -1,8 +1,8 @@
-use crate::commands::ExtCommand;
+use crate::commands::{self, ExtCommand};
 use crate::context::ShellContext;
 use crate::lexer::Token;
 
-use libc::{dup2, fork, waitpid};
+use libc::{close, dup, dup2, fork, waitpid};
 use std::fs::File;
 use std::os::fd::AsRawFd;
 use std::path::PathBuf;
@@ -19,6 +19,27 @@ enum Output {
 struct CommandUnit {
     argv: Vec<String>,
     outputs: Vec<Output>,
+}
+
+struct FdGuard {
+    fd: i32,
+    saved: i32,
+}
+
+impl FdGuard {
+    fn new(fd: i32) -> Self {
+        let saved = unsafe { dup(fd) };
+        Self { fd, saved }
+    }
+}
+
+impl Drop for FdGuard {
+    fn drop(&mut self) {
+        unsafe {
+            dup2(self.saved, self.fd);
+            close(self.saved);
+        }
+    }
 }
 
 impl Job {
@@ -69,17 +90,34 @@ impl Job {
     }
 
     pub fn run(self, ctx: &mut ShellContext) {
-        // TODO implement piping
-        for unit in self.commands {
-            Self::execute_unit(unit, ctx);
+        match self.commands.as_slice() {
+            [unit] => {
+                // exactly one command
+                let name = unit.get_name().unwrap();
+                if ctx.registry.get_command(name).is_some() {
+                    // Just Some fd restoration
+                    let _stdout_guard = FdGuard::new(1);
+                    let _stderr_guard = FdGuard::new(2);
+
+                    Self::redirect_output(unit.get_outputs());
+                    Self::exec(unit, ctx);
+                } else {
+                    Self::execute_unit(unit, ctx);
+                }
+            }
+            units => {
+                for unit in units {
+                    Self::execute_unit(unit, ctx);
+                }
+            }
         }
     }
 
-    fn execute_unit(unit: CommandUnit, ctx: &mut ShellContext) {
+    fn execute_unit(unit: &CommandUnit, ctx: &mut ShellContext) {
         match unsafe { fork() } {
             0 => {
                 // CHILD Process
-                Self::redirect_output(&unit.outputs);
+                Self::redirect_output(unit.get_outputs());
                 Self::exec(unit, ctx);
                 std::process::exit(1);
             }
@@ -90,7 +128,7 @@ impl Job {
         }
     }
 
-    fn exec(unit: CommandUnit, ctx: &mut ShellContext) {
+    fn exec(unit: &CommandUnit, ctx: &mut ShellContext) {
         let (name, args) = unit.argv.split_first().unwrap();
 
         if let Some(builtin) = ctx.registry.get_command(name) {
@@ -146,5 +184,13 @@ impl CommandUnit {
 
     fn push_output(&mut self, output: Output) {
         self.outputs.push(output);
+    }
+
+    fn get_name(&self) -> Option<&String> {
+        self.argv.get(0)
+    }
+
+    fn get_outputs(&self) -> &Vec<Output> {
+        &self.outputs
     }
 }
