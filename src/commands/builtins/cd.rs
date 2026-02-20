@@ -1,11 +1,11 @@
-use super::Command;
+use super::BuiltinCommand;
 use crate::context::ShellContext;
 
 use std::{env, path::PathBuf};
 
 pub struct Cd;
 
-impl Command for Cd {
+impl BuiltinCommand for Cd {
     fn name(&self) -> &str {
         "cd"
     }

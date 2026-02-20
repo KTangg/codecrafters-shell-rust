@@ -1,10 +1,10 @@
 use crate::context::ShellContext;
 
-use super::Command;
+use super::BuiltinCommand;
 
 pub struct Exit;
 
-impl Command for Exit {
+impl BuiltinCommand for Exit {
     fn name(&self) -> &str {
         "exit"
     }

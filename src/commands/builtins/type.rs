@@ -1,11 +1,11 @@
 use crate::commands::ExtCommand;
 use crate::context::ShellContext;
 
-use super::Command;
+use super::BuiltinCommand;
 
 pub struct Type;
 
-impl Command for Type {
+impl BuiltinCommand for Type {
     fn name(&self) -> &str {
         "type"
     }

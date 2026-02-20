@@ -1,10 +1,10 @@
 use crate::context::ShellContext;
 
-use super::Command;
+use super::BuiltinCommand;
 
 pub struct Pwd;
 
-impl Command for Pwd {
+impl BuiltinCommand for Pwd {
     fn name(&self) -> &str {
         "pwd"
     }

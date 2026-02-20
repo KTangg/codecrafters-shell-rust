@@ -27,7 +27,7 @@ impl ExtCommand {
         None
     }
 
-    pub fn execute(name: &str, args: &[String], ctx: &ShellContext) {
+    pub fn execute(name: &str, args: &[String], ctx: &mut ShellContext) {
         let Some(path) = ExtCommand::search_binary(name, ctx) else {
             return;
         };

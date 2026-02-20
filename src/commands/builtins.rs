@@ -1,4 +1,4 @@
-use super::Command;
+use crate::context::ShellContext;
 use std::collections::HashMap;
 
 // mod cat;
@@ -21,8 +21,14 @@ pub fn init_registry() -> Registry {
     reg
 }
 
+pub trait BuiltinCommand {
+    fn name(&self) -> &str;
+
+    fn execute(&self, args: &[String], ctx: &mut ShellContext);
+}
+
 pub struct Registry {
-    commands: HashMap<String, Box<dyn Command>>,
+    commands: HashMap<String, Box<dyn BuiltinCommand>>,
 }
 
 impl Registry {
@@ -32,13 +38,13 @@ impl Registry {
         }
     }
 
-    fn register(&mut self, command: Box<dyn Command>) {
+    fn register(&mut self, command: Box<dyn BuiltinCommand>) {
         let name = command.name().to_string();
 
         self.commands.insert(name, command);
     }
 
-    pub fn get_command(&self, name: &str) -> Option<&dyn Command> {
+    pub fn get_command(&self, name: &str) -> Option<&dyn BuiltinCommand> {
         self.commands.get(name).map(|c| c.as_ref())
     }
 }

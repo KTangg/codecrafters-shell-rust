@@ -1,10 +1,10 @@
 use crate::context::ShellContext;
 
-use super::Command;
+use super::BuiltinCommand;
 
 pub struct Echo;
 
-impl Command for Echo {
+impl BuiltinCommand for Echo {
     fn name(&self) -> &str {
         "echo"
     }
