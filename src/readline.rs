@@ -27,20 +27,37 @@ impl ReadlineHelper {
             result.extend(self.search_builtin(prefix));
             result.extend(self.search_path_bins(prefix));
 
+            // dedup all duplication
+            result.sort();
+            result.dedup();
+
+            // Append space if only 1 match
+            if result.len() == 1 {
+                result[0].push(' ');
+            }
+
             result
         }
     }
 
-    fn split_path(prefix: &str) -> (PathBuf, &str) {
+    fn split_path(prefix: &str) -> (PathBuf, &str, bool) {
         match prefix.rfind('/') {
-            Some(i) => (PathBuf::from(&prefix[..=i]), &prefix[i + 1..]),
-            None => (PathBuf::from("."), prefix),
+            Some(i) => (
+                PathBuf::from(&prefix[..=i]),
+                &prefix[i + 1..],
+                true, // user typed a path
+            ),
+            None => (
+                PathBuf::from("."),
+                prefix,
+                false, // implicit current dir
+            ),
         }
     }
 
     fn search_file(&self, prefix: &str) -> Vec<String> {
-        let mut result: Vec<String> = Vec::new();
-        let (dir, file_prefix) = Self::split_path(prefix);
+        let mut result = Vec::new();
+        let (dir, file_prefix, explicit_path) = Self::split_path(prefix);
 
         let Ok(entries) = fs::read_dir(&dir) else {
             return result;
@@ -54,7 +71,11 @@ impl ReadlineHelper {
                 continue;
             }
 
-            let mut completion = dir.join(&*name).to_string_lossy().to_string();
+            let mut completion = if explicit_path {
+                dir.join(&*name).to_string_lossy().to_string()
+            } else {
+                name.to_string()
+            };
 
             if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
                 completion.push('/');
@@ -73,7 +94,7 @@ impl ReadlineHelper {
         for name in self.builtin_names.iter() {
             if name.starts_with(prefix) {
                 // Append space behind for args input
-                result.push(format!("{name} "));
+                result.push(name.to_string());
             }
         }
 
@@ -98,13 +119,11 @@ impl ReadlineHelper {
 
                 // TODO Check for executable
 
-                // Append space behind for args input
-                result.push(format!("{name} "));
+                result.push(name);
             }
         }
 
         result.sort();
-        result.dedup();
         result
     }
 }

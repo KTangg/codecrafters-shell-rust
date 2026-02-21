@@ -8,8 +8,8 @@ use job::Job;
 use lexer::Lexer;
 
 use readline::ReadlineError;
-use rustyline::Editor;
-use rustyline::config::Configurer;
+use rustyline::config::Config;
+use rustyline::{CompletionType, Editor};
 
 use crate::context::ShellContext;
 use crate::readline::make_readline_helper;
@@ -19,12 +19,15 @@ fn main() {
 
     let mut lex = Lexer::new();
 
-    // let builtin_names = ctx
-    //     .builtin_names_iter()
-    //     .map(|name| name.to_string())
-    //     .collect();
-    let mut editor = Editor::new().expect("failed to initiate editor");
-    editor.set_auto_add_history(true);
+    let config = Config::builder()
+        .auto_add_history(true)
+        .completion_type(CompletionType::List)
+        .build();
+
+    let mut editor = Editor::with_config(config).expect("failed to initiate editor");
+
+    // editor.set_auto_add_history(true);
+    // editor.set_completion_show_all_if_ambiguous(true);
 
     loop {
         editor.set_helper(Some(make_readline_helper(&ctx)));
