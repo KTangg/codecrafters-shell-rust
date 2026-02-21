@@ -42,7 +42,7 @@ impl Completer for ReadlineHelper {
             .builtin_names
             .iter()
             .filter(|name| name.starts_with(prefix))
-            .map(|s| s.to_string())
+            .map(|s| format!("{s} "))
             .collect();
 
         Ok((start, matches))
@@ -53,12 +53,13 @@ impl rustyline::hint::Hinter for ReadlineHelper {
     type Hint = String;
 
     fn hint(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
-        let (start, candidates) = self.complete(line, pos, ctx).ok()?;
-        let candidate = candidates.get(0)?;
+        // let (start, candidates) = self.complete(line, pos, ctx).ok()?;
+        // let candidate = candidates.get(0)?;
 
-        let typed_len = pos.checked_sub(start)?;
+        // let typed_len = pos.checked_sub(start)?;
 
-        candidate.get(typed_len..).map(|s| s.to_string())
+        // candidate.get(typed_len..).map(|s| s.to_string())
+        None
     }
 }
 
