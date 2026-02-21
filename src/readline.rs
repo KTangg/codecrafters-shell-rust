@@ -1,18 +1,112 @@
+use rustyline::completion::Completer;
 pub use rustyline::error::ReadlineError;
-use rustyline::history::FileHistory;
-use rustyline::{Editor, completion::Completer};
 
-pub fn initiate_editor(
-    builtin_names: Vec<String>,
-) -> Result<Editor<ReadlineHelper, FileHistory>, ReadlineError> {
-    let mut editor = Editor::new()?;
-    editor.set_helper(Some(ReadlineHelper { builtin_names }));
+use crate::context::ShellContext;
+use std::{fs, path::PathBuf};
 
-    Ok(editor)
+pub fn make_readline_helper(ctx: &ShellContext) -> ReadlineHelper {
+    ReadlineHelper {
+        builtin_names: ctx.builtin_names_iter().map(str::to_owned).collect(),
+        paths: ctx.paths().collect(),
+        // cwd: ctx.cwd().to_path_buf(),
+    }
 }
 
 pub struct ReadlineHelper {
     builtin_names: Vec<String>,
+    paths: Vec<PathBuf>,
+    // cwd: PathBuf,
+}
+
+impl ReadlineHelper {
+    fn complete_token(&self, prefix: &str, only_file_path: bool) -> Vec<String> {
+        if only_file_path || prefix.contains('/') {
+            self.search_file(prefix)
+        } else {
+            let mut result = Vec::new();
+            result.extend(self.search_builtin(prefix));
+            result.extend(self.search_path_bins(prefix));
+
+            result
+        }
+    }
+
+    fn split_path(prefix: &str) -> (PathBuf, &str) {
+        match prefix.rfind('/') {
+            Some(i) => (PathBuf::from(&prefix[..=i]), &prefix[i + 1..]),
+            None => (PathBuf::from("."), prefix),
+        }
+    }
+
+    fn search_file(&self, prefix: &str) -> Vec<String> {
+        let mut result: Vec<String> = Vec::new();
+        let (dir, file_prefix) = Self::split_path(prefix);
+
+        let Ok(entries) = fs::read_dir(&dir) else {
+            return result;
+        };
+
+        for entry in entries.flatten() {
+            let file_name = entry.file_name();
+            let name = file_name.to_string_lossy();
+
+            if !name.starts_with(file_prefix) {
+                continue;
+            }
+
+            let mut completion = dir.join(&*name).to_string_lossy().to_string();
+
+            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                completion.push('/');
+            }
+
+            result.push(completion);
+        }
+
+        result.sort();
+        result
+    }
+
+    fn search_builtin(&self, prefix: &str) -> Vec<String> {
+        let mut result: Vec<String> = Vec::new();
+
+        for name in self.builtin_names.iter() {
+            if name.starts_with(prefix) {
+                // Append space behind for args input
+                result.push(format!("{name} "));
+            }
+        }
+
+        result.sort();
+        result
+    }
+
+    fn search_path_bins(&self, prefix: &str) -> Vec<String> {
+        let mut result: Vec<String> = Vec::new();
+
+        for dir in self.paths.iter() {
+            let Ok(entries) = fs::read_dir(dir) else {
+                continue;
+            };
+
+            for entry in entries.flatten() {
+                let name = entry.file_name().to_string_lossy().to_string();
+
+                if !name.starts_with(prefix) {
+                    continue;
+                }
+
+                // TODO Check for executable
+
+                // Append space behind for args input
+                result.push(format!("{name} "));
+            }
+        }
+
+        result.sort();
+        result.dedup();
+        result
+    }
 }
 
 impl rustyline::Helper for ReadlineHelper {}
@@ -34,25 +128,23 @@ impl Completer for ReadlineHelper {
 
         let prefix = line.get(start..pos).unwrap_or("");
 
-        if prefix.len() < 3 {
+        if prefix.len() < 2 {
             return Ok((start, Vec::new()));
         }
 
-        let matches: Vec<String> = self
-            .builtin_names
-            .iter()
-            .filter(|name| name.starts_with(prefix))
-            .map(|s| format!("{s} "))
-            .collect();
+        // Not first argv only search for file path otherwise search all
+        let only_file_path = start != 0;
+        let result = self.complete_token(prefix, only_file_path);
 
-        Ok((start, matches))
+        Ok((start, result))
     }
 }
 
 impl rustyline::hint::Hinter for ReadlineHelper {
+    // Hint will fill the user input with out any action
     type Hint = String;
 
-    fn hint(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
+    fn hint(&self, _line: &str, _pos: usize, _ctx: &rustyline::Context<'_>) -> Option<Self::Hint> {
         // let (start, candidates) = self.complete(line, pos, ctx).ok()?;
         // let candidate = candidates.get(0)?;
 

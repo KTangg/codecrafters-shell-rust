@@ -40,6 +40,14 @@ impl ShellContext {
         self.env.unset(key)
     }
 
+    pub fn paths(&self) -> impl Iterator<Item = PathBuf> {
+        self.env
+            .get("PATH")
+            .into_iter()
+            .flat_map(|p| p.split(':'))
+            .map(PathBuf::from)
+    }
+
     pub fn cwd(&self) -> &Path {
         &self.cwd
     }

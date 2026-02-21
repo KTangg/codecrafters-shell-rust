@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Literal(String),
-    Complex(String),
+    // Complex(String),
     Pipe,
     Redirect(usize),
     Append(usize),

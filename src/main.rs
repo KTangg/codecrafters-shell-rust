@@ -6,24 +6,29 @@ mod readline;
 
 use job::Job;
 use lexer::Lexer;
+
 use readline::ReadlineError;
+use rustyline::Editor;
 use rustyline::config::Configurer;
 
 use crate::context::ShellContext;
+use crate::readline::make_readline_helper;
 
 fn main() {
     let mut ctx = ShellContext::new();
 
     let mut lex = Lexer::new();
 
-    let builtin_names = ctx
-        .builtin_names_iter()
-        .map(|name| name.to_string())
-        .collect();
-    let mut editor = readline::initiate_editor(builtin_names).expect("failed to initiate readline");
+    // let builtin_names = ctx
+    //     .builtin_names_iter()
+    //     .map(|name| name.to_string())
+    //     .collect();
+    let mut editor = Editor::new().expect("failed to initiate editor");
     editor.set_auto_add_history(true);
 
     loop {
+        editor.set_helper(Some(make_readline_helper(&ctx)));
+
         let readline = editor.readline("$ ");
         match readline {
             Ok(line) => {
