@@ -1,6 +1,5 @@
-use crate::context::ShellContext;
-
 use super::BuiltinCommand;
+use crate::context::ShellContext;
 
 pub struct Pwd;
 
@@ -9,6 +8,6 @@ impl BuiltinCommand for Pwd {
         "pwd"
     }
     fn execute(&self, _args: &[String], ctx: &mut ShellContext) {
-        println!("{}", ctx.cwd.to_str().unwrap());
+        println!("{}", ctx.cwd().to_str().unwrap());
     }
 }

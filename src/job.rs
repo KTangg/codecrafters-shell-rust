@@ -1,4 +1,4 @@
-use crate::commands::{self, ExtCommand};
+use crate::commands::ExtCommand;
 use crate::context::ShellContext;
 use crate::lexer::Token;
 
@@ -94,7 +94,10 @@ impl Job {
             [unit] => {
                 // exactly one command
                 let name = unit.get_name().unwrap();
-                if ctx.registry.get_command(name).is_some() {
+
+                let is_builtin = { ctx.registry().get_command(name).is_some() };
+
+                if is_builtin {
                     // Just Some fd restoration
                     let _stdout_guard = FdGuard::new(1);
                     let _stderr_guard = FdGuard::new(2);
@@ -131,7 +134,7 @@ impl Job {
     fn exec(unit: &CommandUnit, ctx: &mut ShellContext) {
         let (name, args) = unit.argv.split_first().unwrap();
 
-        if let Some(builtin) = ctx.registry.get_command(name) {
+        if let Some(builtin) = ctx.registry().get_command(name) {
             builtin.execute(args, ctx);
         } else {
             ExtCommand::execute(name, args, ctx);

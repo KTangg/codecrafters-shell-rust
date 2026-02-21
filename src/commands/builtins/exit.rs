@@ -1,6 +1,5 @@
-use crate::context::ShellContext;
-
 use super::BuiltinCommand;
+use crate::context::ShellContext;
 
 pub struct Exit;
 

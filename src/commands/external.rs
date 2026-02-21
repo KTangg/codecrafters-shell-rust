@@ -9,7 +9,7 @@ pub struct ExtCommand;
 
 impl ExtCommand {
     pub fn search_binary(name: &str, ctx: &ShellContext) -> Option<PathBuf> {
-        let Some(paths) = ctx.env.get("PATH") else {
+        let Some(paths) = ctx.env("PATH") else {
             todo!();
         };
 
@@ -27,7 +27,7 @@ impl ExtCommand {
         None
     }
 
-    pub fn execute(name: &str, args: &[String], ctx: &mut ShellContext) {
+    pub fn execute(name: &str, args: &[String], ctx: &ShellContext) {
         let Some(path) = ExtCommand::search_binary(name, ctx) else {
             return;
         };

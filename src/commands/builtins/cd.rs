@@ -1,7 +1,6 @@
 use super::BuiltinCommand;
 use crate::context::ShellContext;
-
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 pub struct Cd;
 
@@ -15,7 +14,7 @@ impl BuiltinCommand for Cd {
         }
 
         let target = match args.first().map(String::as_str) {
-            Some("~") => match ctx.env.get("HOME") {
+            Some("~") => match ctx.env("HOME") {
                 Some(home) => PathBuf::from(home),
                 None => {
                     eprintln!("{}: HOME not set", self.name());
@@ -23,7 +22,7 @@ impl BuiltinCommand for Cd {
                 }
             },
             Some(path) => PathBuf::from(path),
-            None => match ctx.env.get("HOME") {
+            None => match ctx.env("HOME") {
                 Some(home) => PathBuf::from(home),
                 None => {
                     eprintln!("{}: HOME not set", self.name());
@@ -32,7 +31,7 @@ impl BuiltinCommand for Cd {
             },
         };
 
-        if let Err(_) = env::set_current_dir(&target) {
+        if let Err(_) = std::env::set_current_dir(&target) {
             eprintln!(
                 "{}: {}: No such file or directory",
                 self.name(),
@@ -41,6 +40,6 @@ impl BuiltinCommand for Cd {
             return;
         }
 
-        ctx.cwd = env::current_dir().unwrap();
+        ctx.set_cwd(target);
     }
 }

@@ -1,5 +1,5 @@
 use crate::context::ShellContext;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 // mod cat;
 mod cd;
@@ -11,12 +11,12 @@ mod r#type;
 pub fn init_registry() -> Registry {
     let mut reg = Registry::new();
 
-    reg.register(Box::new(echo::Echo));
-    reg.register(Box::new(exit::Exit));
-    reg.register(Box::new(r#type::Type));
+    reg.register(Arc::new(echo::Echo));
+    reg.register(Arc::new(exit::Exit));
+    reg.register(Arc::new(r#type::Type));
     // reg.register(Box::new(cat::Cat));
-    reg.register(Box::new(pwd::Pwd));
-    reg.register(Box::new(cd::Cd));
+    reg.register(Arc::new(pwd::Pwd));
+    reg.register(Arc::new(cd::Cd));
 
     reg
 }
@@ -28,7 +28,7 @@ pub trait BuiltinCommand {
 }
 
 pub struct Registry {
-    commands: HashMap<String, Box<dyn BuiltinCommand>>,
+    commands: HashMap<String, Arc<dyn BuiltinCommand>>,
 }
 
 impl Registry {
@@ -38,14 +38,22 @@ impl Registry {
         }
     }
 
-    fn register(&mut self, command: Box<dyn BuiltinCommand>) {
+    fn register(&mut self, command: Arc<dyn BuiltinCommand>) {
         let name = command.name().to_string();
 
         self.commands.insert(name, command);
     }
 
-    pub fn get_command(&self, name: &str) -> Option<&dyn BuiltinCommand> {
-        self.commands.get(name).map(|c| c.as_ref())
+    pub fn get_command(&self, name: &str) -> Option<Arc<dyn BuiltinCommand>> {
+        self.commands.get(name).cloned()
+    }
+
+    pub fn check_builtin(&self, name: &str) -> bool {
+        self.commands.get(name).is_some()
+    }
+
+    pub fn command_names(&self) -> impl Iterator<Item = &str> {
+        self.commands.keys().map(|k| k.as_str())
     }
 }
 
