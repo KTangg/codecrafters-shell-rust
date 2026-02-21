@@ -40,6 +40,11 @@ impl BuiltinCommand for Cd {
             return;
         }
 
-        ctx.set_cwd(target);
+        match std::env::current_dir() {
+            Ok(abs) => ctx.set_cwd(abs),
+            Err(_) => {
+                eprintln!("{}: failed to get current directory", self.name());
+            }
+        }
     }
 }
