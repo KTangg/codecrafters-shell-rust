@@ -7,3 +7,4 @@ rust-version = "1.91"
 
 [dependencies]
 libc = "0.2.182"
+rustyline = "17.0.2"
