@@ -76,13 +76,8 @@ impl Env {
     }
 
     fn from_system() -> Env {
-        let mut env = Env {
-            vars: HashMap::new(),
-        };
-        for (key, value) in env::vars() {
-            env.set(&key, &value);
+        Env {
+            vars: env::vars().collect(),
         }
-
-        env
     }
 }
