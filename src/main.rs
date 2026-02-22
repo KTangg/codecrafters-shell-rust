@@ -28,7 +28,7 @@ fn main() -> io::Result<()> {
 
     // Preload history
     let history_file_path = PathBuf::from(ctx.env("HISTFILE").unwrap_or(""));
-    preload_history(&mut ctx, &mut editor, &history_file_path)?;
+    let _ = preload_history(&mut ctx, &mut editor, &history_file_path);
 
     let mut lex = Lexer::new();
     loop {
