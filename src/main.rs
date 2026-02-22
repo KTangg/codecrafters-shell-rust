@@ -11,8 +11,8 @@ use readline::ReadlineError;
 use rustyline::config::Config;
 use rustyline::{CompletionType, Editor};
 
-use crate::context::ShellContext;
-use crate::readline::make_readline_helper;
+use context::ShellContext;
+use readline::make_readline_helper;
 
 fn main() {
     let mut ctx = ShellContext::new();
@@ -26,11 +26,8 @@ fn main() {
 
     let mut editor = Editor::with_config(config).expect("failed to initiate editor");
 
-    // editor.set_auto_add_history(true);
-    // editor.set_completion_show_all_if_ambiguous(true);
-
     loop {
-        editor.set_helper(Some(make_readline_helper(&ctx)));
+        editor.set_helper(Some(make_readline_helper(&ctx))); // Not efficient since we need to copied some ctx value everytime
 
         let readline = editor.readline("$ ");
         match readline {

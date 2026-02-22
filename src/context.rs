@@ -1,4 +1,4 @@
-use crate::commands::{Registry, builtins::init_registry};
+use crate::commands::{Registry, init_registry};
 use std::{
     collections::HashMap,
     env,

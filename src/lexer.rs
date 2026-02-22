@@ -3,8 +3,8 @@ pub enum Token {
     Literal(String),
     // Complex(String),
     Pipe,
-    Redirect(usize),
-    Append(usize),
+    Write(i32),
+    Append(i32),
 }
 
 pub enum Quote {
@@ -79,7 +79,7 @@ impl Lexer {
                             chars.next();
                             tokens.push(Token::Append(fd))
                         }
-                        _ => tokens.push(Token::Redirect(fd)),
+                        _ => tokens.push(Token::Write(fd)),
                     }
                 }
 
@@ -104,12 +104,12 @@ impl Lexer {
         }
     }
 
-    fn take_io_number(tk: &mut String) -> Option<usize> {
+    fn take_io_number(tk: &mut String) -> Option<i32> {
         if !tk.bytes().all(|b| b.is_ascii_digit()) {
             return None;
         }
 
-        let fd = tk.parse::<usize>().ok()?;
+        let fd = tk.parse::<i32>().ok()?;
         tk.clear();
         Some(fd)
     }
@@ -228,11 +228,11 @@ mod tests {
         let mut lex = Lexer::new();
 
         lex.push("> test.txt");
-        let expect = vec![Token::Redirect(1), Token::Literal("test.txt".to_string())];
+        let expect = vec![Token::Write(1), Token::Literal("test.txt".to_string())];
         assert_eq!(expect, lex.tokenize());
 
         lex.push("2> test.txt");
-        let expect = vec![Token::Redirect(2), Token::Literal("test.txt".to_string())];
+        let expect = vec![Token::Write(2), Token::Literal("test.txt".to_string())];
         assert_eq!(expect, lex.tokenize());
 
         lex.push(">> test.txt");
@@ -246,7 +246,7 @@ mod tests {
         lex.push("just2>test.txt");
         let expect = vec![
             Token::Literal("just2".to_string()),
-            Token::Redirect(1),
+            Token::Write(1),
             Token::Literal("test.txt".to_string()),
         ];
         assert_eq!(expect, lex.tokenize());

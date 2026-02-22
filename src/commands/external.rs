@@ -3,17 +3,13 @@ use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::context::ShellContext;
+use super::ShellContext;
 
 pub struct ExtCommand;
 
 impl ExtCommand {
     pub fn search_binary(name: &str, ctx: &ShellContext) -> Option<PathBuf> {
-        let Some(paths) = ctx.env("PATH") else {
-            todo!();
-        };
-
-        for path in std::env::split_paths(paths) {
+        for path in ctx.paths() {
             let bin_path = path.join(name);
 
             if let Ok(meta) = std::fs::metadata(&bin_path) {
