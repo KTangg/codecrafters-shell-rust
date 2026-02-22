@@ -99,12 +99,10 @@ impl BuiltinCommand for History {
 
             HistoryAction::List { limit } => {
                 let entries = ctx.historys();
-                let skip_n = entries.len().saturating_sub(limit.unwrap_or(usize::MAX));
+                let start = entries.len().saturating_sub(limit.unwrap_or(usize::MAX));
 
-                let iter = entries.iter().skip(skip_n);
-
-                for (i, entry) in iter.enumerate() {
-                    println!("    {}  {}", skip_n + i + 1, entry);
+                for (idx, entry) in (start + 1..).zip(entries.iter().skip(start)) {
+                    println!("    {}  {}", idx, entry);
                 }
             }
         }
