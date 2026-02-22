@@ -1,6 +1,5 @@
-use super::BuiltinCommand;
+use super::{BuiltinCommand, ShellContext};
 use crate::commands::ExtCommand;
-use crate::context::ShellContext;
 
 pub struct Type;
 

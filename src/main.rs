@@ -20,7 +20,6 @@ fn main() {
     let mut lex = Lexer::new();
 
     let config = Config::builder()
-        .auto_add_history(true)
         .completion_type(CompletionType::List)
         .build();
 
@@ -32,9 +31,13 @@ fn main() {
         let readline = editor.readline("$ ");
         match readline {
             Ok(line) => {
+                // Process line
                 lex.push(&line.trim());
-
                 let tokens = lex.tokenize();
+
+                // Add line to history which consume line this should move up
+                ctx.push_history(line);
+
                 if tokens.is_empty() {
                     continue;
                 }

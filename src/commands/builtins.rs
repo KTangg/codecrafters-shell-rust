@@ -5,20 +5,29 @@ use std::{collections::HashMap, sync::Arc};
 mod cd;
 mod echo;
 mod exit;
+mod history;
 mod pwd;
 mod r#type;
 
+macro_rules! registry {
+    ( $( $cmd:path ),* $(,)? ) => {{
+        let mut reg = Registry::new();
+        $(
+            reg.register(Arc::new($cmd));
+        )*
+        reg
+    }};
+}
+
 pub fn init_registry() -> Registry {
-    let mut reg = Registry::new();
-
-    reg.register(Arc::new(echo::Echo));
-    reg.register(Arc::new(exit::Exit));
-    reg.register(Arc::new(r#type::Type));
-    // reg.register(Box::new(cat::Cat));
-    reg.register(Arc::new(pwd::Pwd));
-    reg.register(Arc::new(cd::Cd));
-
-    reg
+    registry![
+        echo::Echo,
+        exit::Exit,
+        r#type::Type,
+        pwd::Pwd,
+        cd::Cd,
+        history::History,
+    ]
 }
 
 pub trait BuiltinCommand {

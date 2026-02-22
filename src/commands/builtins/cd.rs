@@ -1,5 +1,4 @@
-use super::BuiltinCommand;
-use crate::context::ShellContext;
+use super::{BuiltinCommand, ShellContext};
 use std::path::PathBuf;
 
 pub struct Cd;

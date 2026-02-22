@@ -1,6 +1,4 @@
-use super::BuiltinCommand;
-use crate::context::ShellContext;
-
+use super::{BuiltinCommand, ShellContext};
 pub struct Echo;
 
 impl BuiltinCommand for Echo {
