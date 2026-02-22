@@ -72,6 +72,13 @@ impl ShellContext {
         self.history.clear();
     }
 
+    pub fn preload_history(&mut self, target: &Path) -> io::Result<()> {
+        self.history.read(target)?;
+        self.history.mark_flushed();
+
+        Ok(())
+    }
+
     pub fn read_history(&mut self, target: &Path) -> io::Result<()> {
         self.history.read(target)?;
 
@@ -138,6 +145,10 @@ impl History {
         self.flush_index = 0;
     }
 
+    fn mark_flushed(&mut self) {
+        self.flush_index = self.entries.len();
+    }
+
     fn unflushed_history(&self) -> &[String] {
         self.entries.get(self.flush_index..).unwrap_or(&[])
     }
@@ -183,7 +194,7 @@ impl History {
         writer.flush()?;
 
         // Set new flush index
-        self.flush_index = self.entries.len();
+        self.mark_flushed();
 
         Ok(())
     }
