@@ -1,5 +1,5 @@
 use super::{BuiltinCommand, ShellContext};
-use std::{fs::File, path::PathBuf};
+use std::{path::PathBuf, usize};
 
 pub struct History;
 
@@ -98,10 +98,13 @@ impl BuiltinCommand for History {
             }
 
             HistoryAction::List { limit } => {
-                let iter = ctx.historys().take(limit.unwrap_or(usize::MAX));
+                let entries = ctx.historys();
+                let skip_n = entries.len().saturating_sub(limit.unwrap_or(usize::MAX));
+
+                let iter = entries.iter().skip(skip_n);
 
                 for (i, entry) in iter.enumerate() {
-                    println!("    {}  {}", i + 1, entry);
+                    println!("    {}  {}", skip_n + i + 1, entry);
                 }
             }
         }

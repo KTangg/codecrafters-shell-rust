@@ -60,8 +60,8 @@ impl ShellContext {
         self.cwd = path;
     }
 
-    pub fn historys(&self) -> impl Iterator<Item = &String> {
-        self.history.entries.iter()
+    pub fn historys(&self) -> &[String] {
+        &self.history.entries
     }
 
     pub fn push_history(&mut self, entity: &str) {
