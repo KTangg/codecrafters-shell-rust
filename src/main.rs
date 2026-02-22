@@ -9,7 +9,8 @@ use lexer::Lexer;
 
 use readline::ReadlineError;
 use rustyline::config::Config;
-use rustyline::{CompletionType, Editor};
+use rustyline::history::History;
+use rustyline::{CompletionType, Editor, Helper};
 
 use context::ShellContext;
 use readline::make_readline_helper;
@@ -31,17 +32,17 @@ fn main() {
         let readline = editor.readline("$ ");
         match readline {
             Ok(line) => {
-                // Process line
-                lex.push(&line.trim());
-                let tokens = lex.tokenize();
+                // Preprocess line
+                let line = line.trim();
 
                 // Add line to history which consume line this should move up
-                ctx.push_history(line);
+                add_history(&mut ctx, &mut editor, line);
 
-                if tokens.is_empty() {
-                    continue;
-                }
+                // Parsing line
+                lex.push(&line);
+                let tokens = lex.tokenize();
 
+                // Run job
                 let job = Job::new(tokens);
                 job.run(&mut ctx);
             }
@@ -51,6 +52,19 @@ fn main() {
                 eprintln!("{e:?}");
                 break;
             }
+        }
+    }
+}
+
+fn add_history<H, I>(ctx: &mut ShellContext, editor: &mut Editor<H, I>, line: &str)
+where
+    H: Helper,
+    I: History,
+{
+    // Keep history in sync on both rustyline and builtin
+    if let Ok(result) = editor.add_history_entry(line) {
+        if result {
+            ctx.push_history(line);
         }
     }
 }

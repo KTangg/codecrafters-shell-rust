@@ -1,5 +1,3 @@
-use rustyline::history;
-
 use crate::commands::{Registry, init_registry};
 use std::{
     collections::HashMap,
@@ -66,8 +64,10 @@ impl ShellContext {
         self.history.entries.iter()
     }
 
-    pub fn push_history(&mut self, entity: String) {
-        self.history.entries.push(entity.to_string());
+    pub fn push_history(&mut self, entity: &str) {
+        if !entity.is_empty() {
+            self.history.entries.push(entity.to_string());
+        }
     }
 
     pub fn clear_history(&mut self) {
@@ -81,7 +81,7 @@ impl ShellContext {
         buf.lines().try_for_each(|line| {
             let line = line?;
             if !line.is_empty() {
-                self.push_history(line);
+                self.push_history(&line);
             }
             Ok(())
         })
@@ -96,7 +96,7 @@ impl ShellContext {
         let mut writer = BufWriter::new(file);
 
         for entry in self.historys() {
-            writeln!(writer, "{entry}");
+            writeln!(writer, "{entry}")?;
         }
 
         writer.flush()?;
@@ -108,7 +108,7 @@ impl ShellContext {
         let mut writer = BufWriter::new(file);
 
         for entry in self.historys() {
-            writeln!(writer, "{entry}");
+            writeln!(writer, "{entry}")?;
         }
 
         writer.flush()?;
