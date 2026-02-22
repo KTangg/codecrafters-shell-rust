@@ -9,9 +9,7 @@ impl BuiltinCommand for Exit {
         "exit"
     }
     fn execute(&self, _args: &[String], ctx: &mut ShellContext) {
-        if let Some(target) = ctx.env("HISTFILE") {
-            let _ = ctx.flush_history(&PathBuf::from(target));
-        }
+        ctx.shutdown();
         std::process::exit(0);
     }
 }

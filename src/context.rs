@@ -96,6 +96,13 @@ impl ShellContext {
 
         Ok(())
     }
+
+    pub fn shutdown(&mut self) {
+        // Gracefully exit shell
+        if let Some(path) = self.env("HISTFILE") {
+            let _ = self.flush_history(&PathBuf::from(path));
+        }
+    }
 }
 
 struct Env {

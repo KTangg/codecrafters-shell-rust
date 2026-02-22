@@ -60,7 +60,7 @@ fn main() -> io::Result<()> {
         }
     }
 
-    ctx.flush_history(&PathBuf::from(ctx.env("HISTFILE").unwrap_or("")))?;
+    ctx.shutdown();
     Ok(())
 }
 
