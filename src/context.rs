@@ -56,62 +56,37 @@ impl ShellContext {
         &self.cwd
     }
 
-    pub fn set_cwd(&mut self, path: PathBuf) {
-        self.cwd = path;
+    pub fn set_cwd(&mut self, path: &Path) {
+        self.cwd = PathBuf::from(path);
     }
 
     pub fn historys(&self) -> &[String] {
         &self.history.entries
     }
 
-    pub fn push_history(&mut self, entity: &str) {
-        if !entity.is_empty() {
-            self.history.entries.push(entity.to_string());
-        }
+    pub fn push_history(&mut self, entry: &str) {
+        self.history.push(entry);
     }
 
     pub fn clear_history(&mut self) {
-        self.history.entries.clear();
+        self.history.clear();
     }
 
     pub fn read_history(&mut self, target: &Path) -> io::Result<()> {
-        let file = File::options().read(true).open(target)?;
-        let buf = BufReader::new(file);
+        self.history.read(target)?;
 
-        buf.lines().try_for_each(|line| {
-            let line = line?;
-            if !line.is_empty() {
-                self.push_history(&line);
-            }
-            Ok(())
-        })
-    }
-
-    pub fn write_history(&self, target: &Path) -> io::Result<()> {
-        let file = File::options()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open(target)?;
-        let mut writer = BufWriter::new(file);
-
-        for entry in self.historys() {
-            writeln!(writer, "{entry}")?;
-        }
-
-        writer.flush()?;
         Ok(())
     }
 
-    pub fn append_history(&self, target: &Path) -> io::Result<()> {
-        let file = File::options().create(true).append(true).open(target)?;
-        let mut writer = BufWriter::new(file);
+    pub fn write_history(&self, target: &Path) -> io::Result<()> {
+        self.history.write(target)?;
 
-        for entry in self.historys() {
-            writeln!(writer, "{entry}")?;
-        }
+        Ok(())
+    }
 
-        writer.flush()?;
+    pub fn flush_history(&mut self, target: &Path) -> io::Result<()> {
+        self.history.flush(target)?;
+
         Ok(())
     }
 }
@@ -143,12 +118,73 @@ impl Env {
 
 pub struct History {
     entries: Vec<String>,
+    flush_index: usize,
 }
 
 impl History {
     fn new() -> Self {
         History {
             entries: Vec::new(),
+            flush_index: 0,
         }
+    }
+
+    fn push(&mut self, entry: &str) {
+        self.entries.push(entry.to_string());
+    }
+
+    fn clear(&mut self) {
+        self.entries.clear();
+        self.flush_index = 0;
+    }
+
+    fn unflushed_history(&self) -> &[String] {
+        self.entries.get(self.flush_index..).unwrap_or(&[])
+    }
+
+    fn read(&mut self, target: &Path) -> io::Result<()> {
+        let file = File::options().read(true).open(target)?;
+        let buf = BufReader::new(file);
+
+        buf.lines().try_for_each(|line| {
+            let line = line?;
+            if !line.is_empty() {
+                self.push(&line);
+            }
+            Ok(())
+        })
+    }
+
+    fn write(&self, target: &Path) -> io::Result<()> {
+        let file = File::options()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(target)?;
+        let mut writer = BufWriter::new(file);
+
+        for entry in self.entries.iter() {
+            writeln!(writer, "{entry}")?;
+        }
+
+        writer.flush()?;
+        Ok(())
+    }
+
+    fn flush(&mut self, target: &Path) -> io::Result<()> {
+        let file = File::options().create(true).append(true).open(target)?;
+        let mut writer = BufWriter::new(file);
+
+        // Append only new entry
+        for entry in self.unflushed_history() {
+            writeln!(writer, "{entry}")?;
+        }
+
+        writer.flush()?;
+
+        // Set new flush index
+        self.flush_index = self.entries.len();
+
+        Ok(())
     }
 }

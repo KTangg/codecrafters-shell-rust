@@ -1,5 +1,6 @@
 use super::{BuiltinCommand, ShellContext};
-use std::{path::PathBuf, usize};
+use std::path::PathBuf;
+use std::usize;
 
 pub struct History;
 
@@ -92,7 +93,7 @@ impl BuiltinCommand for History {
             }
 
             HistoryAction::Append(file) => {
-                if let Err(e) = ctx.append_history(&file) {
+                if let Err(e) = ctx.flush_history(&file) {
                     eprintln!("{}: failed to append {}", self.name(), e)
                 }
             }
